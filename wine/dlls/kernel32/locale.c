@@ -50,7 +50,7 @@
 #include "kernel_private.h"
 #include "wine/debug.h"
 
-WINE_DEFAULT_DEBUG_CHANNEL(nls);
+// WINE_DEFAULT_DEBUG_CHANNEL(nls);
 
 #define LOCALE_LOCALEINFOFLAGSMASK (LOCALE_NOUSEROVERRIDE|LOCALE_USE_CP_ACP|\
                                     LOCALE_RETURN_NUMBER|LOCALE_RETURN_GENITIVE_NAMES)
@@ -113,7 +113,7 @@ INT WINAPI CompareStringEx(LPCWSTR locale, DWORD flags, LPCWSTR str1, INT len1,
     DWORD semistub_flags = NORM_LINGUISTIC_CASING|LINGUISTIC_IGNORECASE|0x10000000;
     /* 0x10000000 is related to diacritics in Arabic, Japanese, and Hebrew */
     INT ret;
-    static int once;
+    // static int once;
 
     // if (version) FIXME("unexpected version parameter\n");
     // if (reserved) FIXME("unexpected reserved value\n");

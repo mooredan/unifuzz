@@ -564,10 +564,15 @@ extern "C" {
 
 // #include "../sqlite3ext.h"
 #include "sqlite3ext.h"
-#include "my_def.h"
 SQLITE_EXTENSION_INIT1
 
 #include <assert.h>
+#ifndef WIN32
+#include "windef.h"
+#include "winbase.h"
+#include "winuser.h"
+#include "winnls.h"
+#endif
 
 #ifndef NO_WINDOWS_COLLATION
 #ifdef WIN32
