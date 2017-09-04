@@ -7,8 +7,9 @@ unifuzz.dylib : unifuzz.c \
                 wine/libs/wine/wctype.o \
                 wine/dlls/kernel32/locale.o \
                 wine/libs/wine/sortkey.o
-	gcc -m$(ARCH) -g -fPIC -Wall -dynamiclib \
+	gcc -m$(ARCH) -g -fPIC -dynamiclib \
                           -Iwine/include \
+                          -Wall \
                           unifuzz.c \
                           wine/libs/wine/collation.o \
                           wine/libs/wine/wctype.o \

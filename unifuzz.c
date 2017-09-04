@@ -2866,7 +2866,7 @@ SQLITE_PRIVATE void printfFunc(
     int argc,
     sqlite3_value **argv
 ){
-    u8 *nullStr = "<NULL>";
+    u8 *nullStr = (u8 *)"<NULL>";
     u8 *fmt;
     typedef union {
         i64 i;
@@ -2908,9 +2908,9 @@ SQLITE_PRIVATE void printfFunc(
         }
     }
     if (--argc > 0) {
-        sqlite3_result_text(context, sqlite3_mprintf(fmt, argpile), -1, 0);
+        sqlite3_result_text(context, sqlite3_mprintf((const char *)fmt, argpile), -1, 0);
     } else {
-        sqlite3_result_text(context, fmt, -1, 0);
+        sqlite3_result_text(context, (const char *)fmt, -1, 0);
     }
 }
 
@@ -3261,7 +3261,7 @@ SQLITE_PRIVATE void flipFunc8(
             q -= l;
         }
         q[n] = 0;
-        sqlite3_result_text(context, z2, n, sqlite3_free);
+        sqlite3_result_text(context, (const char *)z2, n, sqlite3_free);
     }
 }
 
@@ -3430,7 +3430,7 @@ SQLITE_PRIVATE void hexwFunc8(
                 *q++ = hexdigits[(z1 >> i) & (u64) 0x0FLL];
             }
             *q = 0;
-            sqlite3_result_text(context, buf, 2 * sizeof(i64), sqlite3_free);
+            sqlite3_result_text(context, (const char *)buf, 2 * sizeof(i64), sqlite3_free);
             break;
         case SQLITE_BLOB :
         case SQLITE_NULL :
@@ -3519,6 +3519,8 @@ SQLITE_PRIVATE void chrwFunc8(
     int n;
     u32 c;
     UNUSED_PARAMETER(argc);
+    // initialize c to suppress warning
+    c = 0;
     switch (sqlite3_value_type(argv[0])) {
         case SQLITE_INTEGER :
         case SQLITE_FLOAT :
@@ -3560,7 +3562,7 @@ SQLITE_PRIVATE void chrwFunc8(
     } else {
         WRITE_UTF8(p, c)
         *p = 0;
-        sqlite3_result_text(context, buf, p - buf, sqlite3_free);
+        sqlite3_result_text(context, (const char *)buf, p - buf, sqlite3_free);
     }
 }
 
@@ -3575,7 +3577,8 @@ SQLITE_PRIVATE void strposFunc8(
 	const u8 *z2;
 	int len;
 	int len1;
-	u64 instnum;
+	// u64 instnum;
+	i64 instnum;
 	int pass;
 
 //	assert((argc == 2) || (argc == 3));
@@ -3674,7 +3677,7 @@ SQLITE_PRIVATE void xeroxFunc8(
 		for (i = 0; i < iCount; ++i) {
 			memcpy(z2 + i * nLen, z1, nLen);
 		}
-		sqlite3_result_text(context, z2, nTLen, sqlite3_free);
+		sqlite3_result_text(context, (const char *)z2, nTLen, sqlite3_free);
 	}
 }
 
@@ -3708,7 +3711,7 @@ SQLITE_PRIVATE void strfilterFunc8(
 		valid = (u8 *) sqlite3_value_text(argv[1]);
 		validlng = sqlite3_value_bytes(argv[1]);
 		if ((inplng == 0) || (validlng == 0)) {
-			sqlite3_result_text(context, inp, 0, SQLITE_TRANSIENT);
+			sqlite3_result_text(context, (const char *)inp, 0, SQLITE_TRANSIENT);
 		} else {
 			/* 
 			** maybe we could allocate less, but that would imply 2 passes, rather waste 
@@ -3725,7 +3728,7 @@ SQLITE_PRIVATE void strfilterFunc8(
 						}
 					}
 				}
-				sqlite3_result_text(context, out, outp - out, sqlite3_free);
+				sqlite3_result_text(context, (const char *)out, outp - out, sqlite3_free);
 			}
 		}
 	}
@@ -3763,7 +3766,7 @@ SQLITE_PRIVATE void strtabooFunc8(
 		taboo = (u8 *) sqlite3_value_text(argv[1]);
 		taboolng = sqlite3_value_bytes(argv[1]);
 		if ((inplng == 0) || (taboolng == 0)) {
-			sqlite3_result_text(context, inp, inplng, SQLITE_TRANSIENT);
+			sqlite3_result_text(context, (const char *)inp, inplng, SQLITE_TRANSIENT);
 		} else {
 			/* 
 			** maybe we could allocate less, but that would imply 2 passes, rather waste 
@@ -3784,7 +3787,7 @@ SQLITE_PRIVATE void strtabooFunc8(
 						WRITE_UTF8(outp, c1)
 					}
 				}
-				sqlite3_result_text(context, out, outp - out, sqlite3_free);
+				sqlite3_result_text(context, (const char *)out, outp - out, sqlite3_free);
 			}
 		}
 	}
@@ -4435,6 +4438,8 @@ SQLITE_PRIVATE void chrwFunc16(
     int n;
     u32 c;
     UNUSED_PARAMETER(argc);
+    // initialize c to suppress warning
+    c = 0;
     switch (sqlite3_value_type(argv[0])) {
         case SQLITE_INTEGER :
         case SQLITE_FLOAT :
@@ -4491,7 +4496,8 @@ SQLITE_PRIVATE void strposFunc16(
 	const u16 *z2;
 	int len;
 	int len1;
-	u64 instnum;
+	// u64 instnum;
+	i64 instnum;
 	int pass;
 
 //	assert((argc == 2) || (argc == 3));
@@ -5062,37 +5068,40 @@ SQLITE_PRIVATE i64 utf16_atoi64(
 **
 ** This version only allows for digits (as per table above)
 */
-SQLITE_PRIVATE i64 utf16_atou64(
-	const u16 **p,
-	int len
-){
-    const u16 *q, *pTerm = &(((u16 *) *p)[len / sizeof(u16)]);
-    i64 value = 0;
-    u32 uc;
-    int i, isnumber, lead0, n;
-    if (len == 0) return 0;
-    isnumber = 1;  /* read digits, if any */
-    lead0 = 1;
-    while (isnumber && (*p < pTerm)) {
-        q = *p;
-        READ_UTF16((*p), pTerm, uc);
-        for (i = 0; i < sizeof(numeric_table) / sizeof(NumericT); i++) {
-            if (uc < numeric_table[i].lo) {
-                isnumber = 0;
-                *p = q;  // position back the pointer at the first non-numeric character
-                break;
-            } else if (uc <= numeric_table[i].hi) {
-                n = numeric_table[i].digit + (u8) (uc - numeric_table[i].lo);
-                if (! ((n == '0') && (lead0))) {
-                    value = 10 * value + n;     // do not check for overflow
-                    lead0 = 0;
-                }
-                break;
-            }
-        }
-    }
-    return value;
-}
+
+// function for "work in progress" functions above
+
+// SQLITE_PRIVATE i64 utf16_atou64(
+// 	const u16 **p,
+// 	int len
+// ){
+//     const u16 *q, *pTerm = &(((u16 *) *p)[len / sizeof(u16)]);
+//     i64 value = 0;
+//     u32 uc;
+//     int i, isnumber, lead0, n;
+//     if (len == 0) return 0;
+//     isnumber = 1;  /* read digits, if any */
+//     lead0 = 1;
+//     while (isnumber && (*p < pTerm)) {
+//         q = *p;
+//         READ_UTF16((*p), pTerm, uc);
+//         for (i = 0; i < sizeof(numeric_table) / sizeof(NumericT); i++) {
+//             if (uc < numeric_table[i].lo) {
+//                 isnumber = 0;
+//                 *p = q;  // position back the pointer at the first non-numeric character
+//                 break;
+//             } else if (uc <= numeric_table[i].hi) {
+//                 n = numeric_table[i].digit + (u8) (uc - numeric_table[i].lo);
+//                 if (! ((n == '0') && (lead0))) {
+//                     value = 10 * value + n;     // do not check for overflow
+//                     lead0 = 0;
+//                 }
+//                 break;
+//             }
+//         }
+//     }
+//     return value;
+// }
 
 
 /*
