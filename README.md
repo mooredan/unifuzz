@@ -38,9 +38,11 @@ Having the source for Wine is not necessary (but may be necessary in the future)
 
 Clone the repository and compile:
 
+```
 % git clone https://github.com/mooredan/unifuzz.git
 % cd unifuzz
 % make
+```
 
 That's it. The result should be the SQLite loadable extension "unifuzz.dylib"
 
@@ -53,6 +55,7 @@ Run sqlite3 referencing a SQLite database,
 The transcript below shows the collation error prior to 
 loading the extension and success after doing so.
 
+```
 $ sqlite3 ~/Documents/Genealogy/RootsMagic/ZebMoore.rmgc
 SQLite version 3.20.1 2017-08-24 16:21:36
 Enter ".help" for usage hints.
@@ -71,6 +74,7 @@ Moore|Ada Grace
 Moore|Ada Mae
 Moore|Ada Pearl
 sqlite> .quit
+```
 
 
 To Do
