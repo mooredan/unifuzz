@@ -98,7 +98,7 @@ Big thanks to the following folks, without them blazing the trail,
 writing and testing the original code, none of this would have been
 possible:
 
-Jean-Christophe Deschamps : last known author of unifuzz.c
-Tom Holden : founder(?) and maintainer of SQLite Tools for RootsMagic
-Wine authors
+* Jean-Christophe Deschamps : last known author of unifuzz.c
+* Tom Holden : founder(?) and maintainer of SQLite Tools for RootsMagic
+* Wine authors
 
