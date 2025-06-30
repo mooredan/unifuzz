@@ -11,6 +11,7 @@ https://sqlitetoolsforrootsmagic.wikispaces.com/RMNOCASE+-+faking+it+in+SQLite+E
 
 The above page provides a link to a WIN32 DLL for use on Windows systems, which cannot be used on macOS or Linux systems.
 Therefore the code needs to be compiled to work on a macOS system.
+
 Jun 2025 : Makefile changes to compile on a Linux system made
 
 This page gives some details on how to compile a SQLite loadable extension:
@@ -31,9 +32,9 @@ all other files are used as is.
 
 Compiling
 ================================
-This has only been tested on a macOS system (MacBook Pro (15-inch, Early 2011) running macOS Sierra Version 10.12.6)
+This has been tested on a macOS system (MacBook Pro (15-inch, Early 2011) running macOS Sierra Version 10.12.6) and a Linux system (System76 Oryx Pro running Pop!_OS 22.04 LTS).
 
-Also installed on the system is MacPorts (including Apple's Xcode Developer Tools), sqlite3 3.20.1 (from MacPorts)
+Also installed on the macOS system is MacPorts (including Apple's Xcode Developer Tools), sqlite3 3.20.1 (from MacPorts)
 
 Having the source for Wine is not necessary (but may be necessary in the future).
 
@@ -45,7 +46,7 @@ Clone the repository and compile:
 % make
 ```
 
-That's it. The result should be the SQLite loadable extension "unifuzz.dylib"
+That's it. The result should be the SQLite loadable extension "unifuzz.dylib" for macOS, and "unifuzz.so" for Linux.
 
 Usage
 ================================
