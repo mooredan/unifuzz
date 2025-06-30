@@ -1,5 +1,5 @@
 *.swp
 *.o
-*.dylib
 *.dylib.dSYM
-*.so
+/unifuzz.so
+/unifuzz.dylib

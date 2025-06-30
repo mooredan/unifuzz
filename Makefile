@@ -66,6 +66,18 @@ wine/dlls/kernel32/locale.o :
 	$(MAKE) -C wine/dlls/kernel32 ARCH=$(ARCH) $(lastword $(subst /, ,$@))
 
 
+.PHONY: publish
+publish : $(TGT)
+	@ if [ ! -d release ]; then mkdir release; fi
+	@ if [ -r release/$(TGT) ]; then \
+           if [ $$(diff -q $(TGT) release/$(TGT)) ]; then \
+              cp -v $(TGT) release/$(TGT);\
+           fi; \
+        else \
+           cp -v $(TGT) release/$(TGT);\
+        fi
+
+
 .PHONY: clean
 clean :
 	- @ $(MAKE) -C wine/libs/wine clean
