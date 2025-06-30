@@ -11,6 +11,7 @@ https://sqlitetoolsforrootsmagic.wikispaces.com/RMNOCASE+-+faking+it+in+SQLite+E
 
 The above page provides a link to a WIN32 DLL for use on Windows systems, which cannot be used on macOS or Linux systems.
 Therefore the code needs to be compiled to work on a macOS system.
+Jun 2025 : Makefile changes to compile on a Linux system made
 
 This page gives some details on how to compile a SQLite loadable extension:
 https://sqlite.org/loadext.html
@@ -100,5 +101,6 @@ possible:
 
 * Jean-Christophe Deschamps : last known author of unifuzz.c
 * Tom Holden : founder(?) and maintainer of SQLite Tools for RootsMagic
+* Richard Otter : https://github.com/RichardOtter/Genealogy-scripts
 * Wine authors
 

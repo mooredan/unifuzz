@@ -32,13 +32,13 @@ locale.o : locale.c
               -D_NORMALIZE_ \
               -D_REENTRANT \
               -fPIC \
-              -Wall \
               -pipe \
               -fno-strict-aliasing \
               -Wdeclaration-after-statement \
               -Wempty-body -Wignored-qualifiers -Wstrict-prototypes \
               -Wtype-limits -Wvla -Wwrite-strings \
               -Wpointer-arith \
+              -Wno-pragma-pack \
               -gdwarf-2 -gstrict-dwarf \
               -fno-omit-frame-pointer -std=gnu89 \
               -g -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0

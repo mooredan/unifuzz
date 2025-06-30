@@ -28,11 +28,12 @@ sortkey.o : sortkey.c
               -I../../../wine/include \
               -D__WINESRC__ \
               -DWINE_UNICODE_API="" -D_REENTRANT -fPIC \
-              -Wall -pipe -fno-strict-aliasing \
+              -pipe -fno-strict-aliasing \
               -Wdeclaration-after-statement  -Wempty-body \
               -Wignored-qualifiers  -Wstrict-prototypes \
               -Wtype-limits  -Wvla \
               -Wwrite-strings  -Wpointer-arith \
+              -Wno-pragma-pack \
               -gdwarf-2 -gstrict-dwarf \
               -fno-omit-frame-pointer -std=gnu89 \
               -g -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
@@ -40,7 +41,7 @@ sortkey.o : sortkey.c
 collation.o : collation.c
 	clang -m$(ARCH) -c -o collation.o collation.c \
               -D__WINESRC__ -DWINE_UNICODE_API="" -D_REENTRANT \
-              -fPIC -Wall -pipe -fno-strict-aliasing -Wdeclaration-after-statement -Wempty-body \
+              -fPIC -pipe -fno-strict-aliasing -Wdeclaration-after-statement -Wempty-body \
               -Wignored-qualifiers -Wstrict-prototypes -Wtype-limits -Wvla -Wwrite-strings -Wpointer-arith \
               -gdwarf-2 -gstrict-dwarf -fno-omit-frame-pointer -std=gnu89 -g -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
 
@@ -49,8 +50,10 @@ wctype.o : wctype.c
 	clang -m$(ARCH) -c -o wctype.o wctype.c \
               -I../../../wine/include \
               -D__WINESRC__ -DWINE_UNICODE_API="" -D_REENTRANT -fPIC \
-              -Wall -pipe -fno-strict-aliasing -Wdeclaration-after-statement -Wempty-body -Wignored-qualifiers \
-              -Wstrict-prototypes -Wtype-limits -Wvla -Wwrite-strings -Wpointer-arith -gdwarf-2 -gstrict-dwarf \
+              -pipe -fno-strict-aliasing -Wdeclaration-after-statement -Wempty-body -Wignored-qualifiers \
+              -Wstrict-prototypes -Wtype-limits -Wvla -Wwrite-strings -Wpointer-arith \
+              -Wno-pragma-pack \
+              -gdwarf-2 -gstrict-dwarf \
               -fno-omit-frame-pointer -std=gnu89 -g -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
 
 .PHONY: clean
