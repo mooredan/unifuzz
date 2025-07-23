@@ -44,14 +44,26 @@ OSXCROSS_PATH := $(HOME)/src/osxcross
 SQLITE3 := sqlite3
 TEST_DB := testdata.rmtree 
 
-FORCE_CROSS =? 0
+OS =? Linux
+FORCE_CROSS = 0
+
+ifeq ($(OS),Darwin)
+	FORCE_CROSS = 1
+endif
 
 CFLAGS =
 
 ifeq ($(OS),Windows_NT)
    EXT = dll
-   TARGET_OS := win 
-   $(error OS: $(UNAME_S) not yet supported)
+   TARGET_OS := windows
+   UNAME_M = x86_64
+   CC = x86_64-w64-mingw32-gcc
+   CFLAGS += -shared
+   CFLAGS += -DWINE_NO_UNICODE_MACROS -DUNICODE
+   CFLAGS += -Isqlite3
+   CFLAGS += -Wl,--export-all-symbols
+   LDFLAGS +=
+   WINE_INCLUDE = -I$(WINE_BASE)/include -I$(WINE_BASE)/include/wine
 else
    UNAME_S = $(shell uname -s)
    UNAME_M = $(shell uname -m)
@@ -121,7 +133,7 @@ $(TGT) : $(SRC)  $(WINE_OBJS)
 
 
 clean:
-	- @ rm -f *.o $(NAME).so $(NAME).dylib
+	- @ rm -f *.o $(NAME).so $(NAME).dylib $(NAME).dll
 	- @ rm -f test.sql testdb.sql
 	- @ rm -f test_output.txt testdb_output.txt
 	@ if [ -d $(WINE_BASE) ]; then find $(WINE_BASE) -name '*.o' -delete; fi

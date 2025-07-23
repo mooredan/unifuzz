@@ -3,6 +3,7 @@
 *.dylib.dSYM
 unifuzz.so
 unifuzz.dylib
+unifuzz.dll
 testdata.rmtree
 dist/
 testdb_output.txt

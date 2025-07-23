@@ -37,10 +37,16 @@ This project uses a flexible `Makefile` to support:
 # Native build (on Linux or macOS)
 make
 
-# Cross-compile for macOS arm64 from Linux
-make FORCE_CROSS=1 
 
-# Run tests
+# To cross-compile for macOS (Apple Silicon) from Linux:
+make OS=Darwin
+
+# To cross-compile for Windows from Linux:
+make OS=Windows_NT
+
+Note: The `sqlite/` directory includes the required `sqlite3.h` and `sqlite3ext.h` headers from the official SQLite amalgamation. These are needed for Windows compilation and are included in the repository. No installation is required.
+
+# Run tests - native testing only (Linux or Mac)
 make testall
 
 # Package prebuilt libraries for distribution
@@ -64,6 +70,11 @@ make testdb
 ```
 
 > ⚠️ Warning: Running against real data should be read-only. This extension does not modify the database.
+
+## Windows Users
+
+Windows users are not expected to compile this project themselves. Prebuilt binaries for `unifuzz.dll` will be provided under the `dist/windows_x86_64/` directory. If you need to use the extension in SQLite on Windows, download the `.dll` and load it with `.load`.
+
 
 ## 📦 Distribution Layout
 
