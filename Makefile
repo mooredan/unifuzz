@@ -19,22 +19,39 @@
 #     Tigard, Oregon, USA
 #     email: mooredan@suncup.net
 
+# =========================
+# Platform-Aware Makefile for unifuzz
+# =========================
 
-ARCH := 64
+# =========================
+# Paths and Inputs
+# =========================
+NAME = unifuzz
+SRC = $(NAME).c
+OBJ = $(NAME).o
+OUT = unifuzz
 
 WINE_BASE = wine
-
-NAME = unifuzz
-SRC = $(addsuffix .c, $(NAME))
+WINE_INCLUDE = -I$(WINE_BASE)/include -I$(WINE_BASE)/include/wine
+WINE_SRCS = \
+    $(WINE_BASE)/libs/wine/sortkey.c \
+    $(WINE_BASE)/libs/wine/collation.c \
+    $(WINE_BASE)/libs/wine/wctype.c \
+    $(WINE_BASE)/dlls/kernel32/locale.c
 
 UNAME_S := $(shell uname -s)
 UNAME_M := $(shell uname -m)
 
 ifeq ($(UNAME_S), Darwin)
+   TARGET_OS := macos
+   TARGET_ARCH := $(UNAME_M)
    TGT = $(addsuffix .dylib, $(NAME))
    GCC_OPTS = -dynamiclib
    WINE_OBJS =
 else ifeq ($(UNAME_S), Linux)
+   TARGET_OS := linux
+   ARCH := 64
+   # TARGET_ARCH := $(UNAME_M)
    TGT = $(addsuffix .so, $(NAME))
    GCC_OPTS = -shared
    WINE_INCLUDE = -I$(WINE_BASE)/include -I$(WINE_BASE)/include/wine
@@ -62,54 +79,58 @@ else ifeq ($(UNAME_S), Linux)
 #               -fno-omit-frame-pointer \
 #               -std=gnu89 \
 
-
-
 else
     $(error Unsupported OS: $(UNAME_S))
 endif
+
+# # Allow override for cross-compiling to macOS from Linux
+# CC ?= clang
+# CFLAGS ?=
+# LDFLAGS ?=
+
+
+
+# =========================
+# Targets
+# =========================
+
+.PHONY: all clean info publish test
 
 all : $(TGT)
 
 $(TGT) : $(SRC)  $(WINE_OBJS)
 	$(CC) -m$(ARCH) -g -fPIC \
-              -Iwine/include \
               -Wall \
+	      $(WINE_INCLUDE) \
               $(GCC_OPTS) \
               $(SRC) \
               $(WINE_OBJS) \
               -o $@
 
 
-# wine/libs/wine/sortkey.o :
-# 	$(MAKE) -C wine/libs/wine ARCH=$(ARCH) $(lastword $(subsr /, ,$@))
-# 
-# wine/libs/wine/collation.o :
-# 	$(MAKE) -C wine/libs/wine ARCH=$(ARCH) $(lastword $(subst /, ,$@))
-# 
-# wine/libs/wine/wctype.o :
-# 	$(MAKE) -C wine/libs/wine ARCH=$(ARCH) $(lastword $(subst /, ,$@))
-# 
-# wine/dlls/kernel32/locale.o :
-# 	$(MAKE) -C wine/dlls/kernel32 ARCH=$(ARCH) $(lastword $(subst /, ,$@))
+# $(OUTFILE): $(OBJ) $(WINE_OBJS) $
+# 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
-
-.PHONY: publish
-publish : $(TGT)
-	@ if [ ! -d release ]; then mkdir release; fi
-	@ if [ -r release/$(TGT) ]; then \
-           if [ $$(diff -q $(TGT) release/$(TGT)) ]; then \
-              cp -v $(TGT) release/$(TGT);\
-           fi; \
-        else \
-           cp -v $(TGT) release/$(TGT);\
-        fi
-
-
-.PHONY: clean
-clean :
-	rm -f *.o $(OUT).so $(OUT).dylib
+clean:
+	rm -f *.o $(NAME).so $(NAME).dylib
 	find $(WINE_BASE) -name '*.o' -delete
-	- @ rm -f unifuzz.dylib
-	- @ rm -f unifuzz.so
-	- @ rm -rf unifuzz.dylib.dSYM/
-	- @ rm -f $(TGT)-unifuzz.c.*
+
+info:
+	@echo "Target OS:    $(TARGET_OS)"
+	@echo "Target ARCH:  $(TARGET_ARCH)"
+	@echo "Compiler:     $(CC)"
+	@echo "Output File:  $(TGT)"
+	@echo "WINE_OBJS:    $(WINE_OBJS)"
+	@echo "CFLAGS:       $(CFLAGS)"
+
+# =========================
+# Publish Target
+# =========================
+
+DIST_DIR = dist
+PLATFORM_TAG = $(TARGET_OS)-$(TARGET_ARCH)
+
+publish: all
+	mkdir -p $(DIST_DIR)
+	cp $(OUTFILE) $(DIST_DIR)/$(OUT)-$(PLATFORM_TAG)$(suffix $(OUTFILE))
+	@echo "\u2705 Published: $(DIST_DIR)/$(OUT)-$(PLATFORM_TAG)$(suffix $(OUTFILE))"

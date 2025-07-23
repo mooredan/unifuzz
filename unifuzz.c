@@ -4,7 +4,7 @@
 **
 **  version:    (see line below)
 */
-#define UNIFUZZ_VERSION Unifuzz v0.3.7  -  Unicode v
+#define UNIFUZZ_VERSION Unifuzz v0.4.0  -  Unicode v
 
 
 #ifndef min
@@ -64,6 +64,7 @@
 **              0.3.6   2010/05/21  Fix © --> (C) and ® --> (R).
 **              0.3.7   2011/06/19  Add strfilter() and strtaboo().
 **              0.3.8   2013/06/21  RMNOCASE is an alias for NOCASE; document unifuzz().
+**              0.4.0   2025/07/23  Compile for Linux (x86_64) and MacOS (arm64)
 **
 **
 **  General
@@ -567,11 +568,47 @@ extern "C" {
 SQLITE_EXTENSION_INIT1
 
 #include <assert.h>
+#ifndef __APPLE__
 #ifndef WIN32
+#include <wchar.h>
+#include <windef.h>
 #include "windef.h"
 #include "winbase.h"
 #include "winuser.h"
 #include "winnls.h"
+#endif
+#endif
+
+#ifdef __APPLE__
+typedef unsigned long DWORD;
+typedef void* LPVOID;
+typedef int BOOL;
+
+#define TRUE 1
+#define FALSE 0
+
+#include <string.h>
+#include <wchar.h>
+#include <stdint.h>
+
+// Windows-style defines
+#define LOCALE_INVARIANT      0x007f
+#define NORM_IGNORECASE       0x00000001
+#define NORM_IGNORENONSPACE   0x00000002
+#define NORM_IGNORESYMBOLS    0x00000004
+#define NORM_IGNOREWIDTH      0x00000008
+#define NORM_IGNOREKANATYPE   0x00010000
+#define SORT_STRINGSORT       0x00001000
+
+typedef uint16_t u16;
+
+// Stub version of CompareStringW: best-effort fallback
+int CompareStringW(int locale, int flags, const u16 *str1, int len1, const u16 *str2, int len2) {
+    int cmp = wcsncasecmp((const wchar_t *)str1, (const wchar_t *)str2, (len1 < len2 ? len1 : len2));
+    if (cmp < 0) return 1;
+    if (cmp > 0) return 3;
+    return 2;
+}
 #endif
 
 #ifndef NO_WINDOWS_COLLATION
