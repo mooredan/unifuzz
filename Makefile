@@ -94,7 +94,7 @@ endif
 # Targets
 # =========================
 
-.PHONY: all clean info publish test
+.PHONY: all clean info publish test testdb
 
 all : $(TGT)
 
@@ -112,8 +112,10 @@ $(TGT) : $(SRC)  $(WINE_OBJS)
 # 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 clean:
-	rm -f *.o $(NAME).so $(NAME).dylib
-	find $(WINE_BASE) -name '*.o' -delete
+	- @ rm -f *.o $(NAME).so $(NAME).dylib
+	- @ rm -f test.sql testdb.sql
+	- @ rm -f test_output.txt testdb_output.txt
+	@ if [ -d $(WINE_BASE) ]; then find $(WINE_BASE) -name '*.o' -delete; fi
 
 info:
 	@echo "Target OS:    $(TARGET_OS)"
@@ -123,10 +125,66 @@ info:
 	@echo "WINE_OBJS:    $(WINE_OBJS)"
 	@echo "CFLAGS:       $(CFLAGS)"
 
+
+
+# =========================
+# Testing 
+# =========================
+test: $(TGT)
+	@echo "Running SQLite extension test for $(TGT)..."
+	@echo ".load ./$(TGT)" > test.sql
+	@echo "-- Scalar function tests" >> test.sql
+	@echo "SELECT proper('john doe') = 'John Doe';" >> test.sql
+	@echo "SELECT flip('abc123') = '321cba';" >> test.sql
+	@echo "SELECT like('foobar', 'FOO%');" >> test.sql
+	@echo "SELECT unaccent('crème brûlée') = 'creme brulee';" >> test.sql
+	@echo "-- Collation test: RMNOCASE" >> test.sql
+	@echo "DROP TABLE IF EXISTS test_collate;" >> test.sql
+	@echo "CREATE TABLE test_collate(name TEXT COLLATE RMNOCASE);" >> test.sql
+	@echo "INSERT INTO test_collate(name) VALUES ('abc'), ('ABC');" >> test.sql
+	@echo "SELECT COUNT(*) = 2 FROM test_collate WHERE name = 'abc';" >> test.sql
+	@echo "-- Optional: Extended function checks" >> test.sql
+	@echo "SELECT lower('ÉLAN') = 'élan';" >> test.sql
+	@echo "SELECT upper('groß') = 'GROSS';" >> test.sql
+	@echo "SELECT name FROM pragma_function_list WHERE name IN ('lower', 'upper', 'ascii', 'space', 'case');" >> test.sql
+	@sqlite3 < test.sql > test_output.txt 2>&1 \
+	  && echo "✅ SQLite extension test passed" \
+	  || (cat test_output.txt; echo "❌ SQLite test failed"; exit 1)
+	@rm -f test.sql test_output.txt
+
+testdb: $(TGT) testdata.rmtree
+	@echo "Running real RootsMagic test against testdata.rmtree..."
+	@echo ".load ./$(TGT)" > testdb.sql
+	@echo "REINDEX RMNOCASE;" >> testdb.sql
+	@echo "-- RMNOCASE collation test" >> testdb.sql
+	@echo "SELECT 'PASS' WHERE 'straße' COLLATE RMNOCASE = 'STRASSE';" >> testdb.sql
+	@echo "-- lower/upper" >> testdb.sql
+	@echo "SELECT lower('ÜBER') = 'über';" >> testdb.sql
+	@echo "SELECT upper('über') = 'ÜBER';" >> testdb.sql
+	@echo "-- proper casing" >> testdb.sql
+	@echo "SELECT proper('john DOE') = 'John Doe';" >> testdb.sql
+	@echo "-- flip string" >> testdb.sql
+	@echo "SELECT flip('abcd') = 'dcba';" >> testdb.sql
+	@echo "-- RMNOCASE should match both upper/lower case" >> testdb.sql
+	@echo "SELECT DISTINCT Surname FROM NameTable ORDER BY Surname COLLATE RMNOCASE LIMIT 10;" >> testdb.sql
+	@echo "-- Case-insensitive equality test" >> testdb.sql
+	@echo "SELECT COUNT(*) FROM NameTable WHERE Surname COLLATE RMNOCASE = 'smith';" >> testdb.sql
+	@echo "-- LIKE override test" >> testdb.sql
+	@echo "SELECT COUNT(*) FROM NameTable WHERE Given LIKE 'jo%';" >> testdb.sql
+	@echo "-- ascii conversion" >> testdb.sql
+	@echo "-- check for optional functions" >> testdb.sql
+	@echo "SELECT name FROM pragma_function_list WHERE name IN ('ascii', 'space');" >> testdb.sql
+	@echo "-- Unicode LIKE override" >> testdb.sql
+	@echo "SELECT 'MATCH' WHERE 'Søren' LIKE 'sø%';" >> testdb.sql
+	@sqlite3 testdata.rmtree < testdb.sql > testdb_output.txt 2>&1 && \
+	  echo "✅ testdb passed" || \
+	  (cat testdb_output.txt; echo "❌ testdb failed"; exit 1)
+	@rm -f testdb.sql
+
+
 # =========================
 # Publish Target
 # =========================
-
 DIST_DIR = dist
 PLATFORM_TAG = $(TARGET_OS)-$(TARGET_ARCH)
 
