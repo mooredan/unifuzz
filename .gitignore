@@ -1,5 +1,7 @@
 *.swp
 *.o
 *.dylib.dSYM
-/unifuzz.so
-/unifuzz.dylib
+unifuzz.so
+unifuzz.dylib
+testdata.rmtree
+dist/

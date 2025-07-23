@@ -3552,7 +3552,7 @@ SQLITE_PRIVATE void chrwFunc8(
     int argc,
     sqlite3_value **argv
 ){
-    u8 *buf, *p, *q;
+    u8 *buf = NULL, *p = NULL, *q;
     int n;
     u32 c;
     UNUSED_PARAMETER(argc);
@@ -3590,10 +3590,17 @@ SQLITE_PRIVATE void chrwFunc8(
             sqlite3_result_null(context);
             return;
     }
+
+    if (p == NULL) {
+        sqlite3_result_null(context);
+        return;
+    }
+
     // refuse to let invalid Unicode code points in
     if (    ((c >= 0xD800) && (c <= 0xDFFF)) ||
             ((c >= 0xFDD0) && (c <= 0xFDEF)) ||
-            ((c & 0xFFFE) == 0xFFFFE) ||
+            ((c & 0xFFFF) == 0xFFFE) ||
+            ((c & 0xFFFF) == 0xFFFF) ||
             (c > 0x10FFFF)                      ) {
         c = 0xFFFD;
     } else {
@@ -4470,7 +4477,7 @@ SQLITE_PRIVATE void chrwFunc16(
     int argc,
     sqlite3_value **argv
 ){
-    u16 *buf, *p;
+    u16 *buf = NULL, *p = NULL;
     u8 *q;
     int n;
     u32 c;
@@ -4509,10 +4516,17 @@ SQLITE_PRIVATE void chrwFunc16(
             sqlite3_result_null(context);
             return;
     }
+
+    if (p == NULL) {
+        sqlite3_result_null(context);
+        return;
+    }
+
     // refuse to let invalid Unicode code points in
     if (    ((c >= 0xD800) && (c <= 0xDFFF)) ||
             ((c >= 0xFDD0) && (c <= 0xFDEF)) ||
-            ((c & 0xFFFE) == 0xFFFFE) ||
+            ((c & 0xFFFF) == 0xFFFE) ||
+            ((c & 0xFFFF) == 0xFFFF) ||
             (c > 0x10FFFF)                      ) {
         c = 0xFFFD;
     } else {
@@ -5465,13 +5479,17 @@ int sqlite3_extension_init(
 #ifndef NO_WINDOWS_COLLATION
     /* Also override the default NOCASE case-insensitive collation sequence. */
     // Warning: encoding UTF-16LE is mandatory
-    if (rc == SQLITE_OK)
 #ifdef UNIFUZZ_OVERRIDE_NOCASE
+    if (rc == SQLITE_OK)
         rc = sqlite3_create_collation(db, "NOCASE",    SQLITE_UTF16LE, 0, nocase_collate);
+
+    if (rc == SQLITE_OK)
         rc = sqlite3_create_collation(db, "RMNOCASE",  SQLITE_UTF16LE, 0, nocase_collate);	// special for Tom Holden!
 #else
+    if (rc == SQLITE_OK)
         rc = sqlite3_create_collation(db, "NOCASEU",   SQLITE_UTF16LE, 0, nocase_collate);
 #endif
+
     if ((rc == SQLITE_OK) || (rc == SQLITE_BUSY))
         rc = sqlite3_create_collation(db, "NAMES",     SQLITE_UTF16LE, 0, names_collate);
     if (rc == SQLITE_OK)
