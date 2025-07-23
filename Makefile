@@ -22,48 +22,75 @@
 
 ARCH := 64
 
+WINE_BASE = wine
 
+NAME = unifuzz
+SRC = $(addsuffix .c, $(NAME))
 
 UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S), Linux)
-   TGT = unifuzz.so
-   GCC_OPTS = -shared
-endif
+UNAME_M := $(shell uname -m)
+
 ifeq ($(UNAME_S), Darwin)
-   TGT = unifuzz.dylib
+   TGT = $(addsuffix .dylib, $(NAME))
    GCC_OPTS = -dynamiclib
+   WINE_OBJS =
+else ifeq ($(UNAME_S), Linux)
+   TGT = $(addsuffix .so, $(NAME))
+   GCC_OPTS = -shared
+   WINE_INCLUDE = -I$(WINE_BASE)/include -I$(WINE_BASE)/include/wine
+   WINE_SRCS = \
+       $(WINE_BASE)/libs/wine/sortkey.c \
+       $(WINE_BASE)/libs/wine/collation.c \
+       $(WINE_BASE)/libs/wine/wctype.c \
+       $(WINE_BASE)/dlls/kernel32/locale.c
+   WINE_OBJS = $(WINE_SRCS:.c=.o)
+   CC = gcc
+   CFLAGS += -m$(ARCH) -fPIC -Wall -O2 \
+      $(WINE_INCLUDE) \
+      -D__WINESRC__ \
+      -D_KERNEL32_ \
+      -D_NORMALIZE_ \
+      -D_REENTRANT \
+      -U_FORTIFY_SOURCE  \
+      -D_FORTIFY_SOURCE=0 \
+      -DWINE_UNICODE_API=""
+
+#               -pipe \
+#               -fno-strict-aliasing \
+#               -gdwarf-2 \
+#               -gstrict-dwarf \
+#               -fno-omit-frame-pointer \
+#               -std=gnu89 \
+
+
+
+else
+    $(error Unsupported OS: $(UNAME_S))
 endif
-
-
 
 all : $(TGT)
 
-$(TGT) : unifuzz.c \
-                wine/libs/wine/collation.o \
-                wine/libs/wine/wctype.o \
-                wine/dlls/kernel32/locale.o \
-                wine/libs/wine/sortkey.o
-	gcc -m$(ARCH) -g -fPIC \
-                          -Iwine/include \
-                          -Wall \
-                          $(GCC_OPTS) \
-                          unifuzz.c \
-                          wine/libs/wine/collation.o \
-                          wine/libs/wine/wctype.o \
-                          wine/dlls/kernel32/locale.o \
-                          wine/libs/wine/sortkey.o -o $@
+$(TGT) : $(SRC)  $(WINE_OBJS)
+	$(CC) -m$(ARCH) -g -fPIC \
+              -Iwine/include \
+              -Wall \
+              $(GCC_OPTS) \
+              $(SRC) \
+              $(WINE_OBJS) \
+              -o $@
 
-wine/libs/wine/sortkey.o :
-	$(MAKE) -C wine/libs/wine ARCH=$(ARCH) $(lastword $(subsr /, ,$@))
 
-wine/libs/wine/collation.o :
-	$(MAKE) -C wine/libs/wine ARCH=$(ARCH) $(lastword $(subst /, ,$@))
-
-wine/libs/wine/wctype.o :
-	$(MAKE) -C wine/libs/wine ARCH=$(ARCH) $(lastword $(subst /, ,$@))
-
-wine/dlls/kernel32/locale.o :
-	$(MAKE) -C wine/dlls/kernel32 ARCH=$(ARCH) $(lastword $(subst /, ,$@))
+# wine/libs/wine/sortkey.o :
+# 	$(MAKE) -C wine/libs/wine ARCH=$(ARCH) $(lastword $(subsr /, ,$@))
+# 
+# wine/libs/wine/collation.o :
+# 	$(MAKE) -C wine/libs/wine ARCH=$(ARCH) $(lastword $(subst /, ,$@))
+# 
+# wine/libs/wine/wctype.o :
+# 	$(MAKE) -C wine/libs/wine ARCH=$(ARCH) $(lastword $(subst /, ,$@))
+# 
+# wine/dlls/kernel32/locale.o :
+# 	$(MAKE) -C wine/dlls/kernel32 ARCH=$(ARCH) $(lastword $(subst /, ,$@))
 
 
 .PHONY: publish
@@ -80,8 +107,8 @@ publish : $(TGT)
 
 .PHONY: clean
 clean :
-	- @ $(MAKE) -C wine/libs/wine clean
-	- @ $(MAKE) -C wine/dlls/kernel32 clean
+	rm -f *.o $(OUT).so $(OUT).dylib
+	find $(WINE_BASE) -name '*.o' -delete
 	- @ rm -f unifuzz.dylib
 	- @ rm -f unifuzz.so
 	- @ rm -rf unifuzz.dylib.dSYM/
