@@ -5,3 +5,4 @@ unifuzz.so
 unifuzz.dylib
 testdata.rmtree
 dist/
+testdb_output.txt
