@@ -38,7 +38,7 @@ This project uses a flexible `Makefile` to support:
 make
 
 # Cross-compile for macOS arm64 from Linux
-make PLATFORM=macos_arm64
+make FORCE_CROSS=1 
 
 # Run tests
 make testall
