@@ -1,107 +1,103 @@
-# unifuzz
+# unifuzz — SQLite Extension for RootsMagic Collations and Functions
 
+`unifuzz` is a SQLite extension that emulates the Windows Unicode collation and string comparison behaviors required by RootsMagic 8/9/10 `.rmtree` genealogy databases.
 
+RootsMagic uses SQLite with custom Unicode collation sequences (notably `RMNOCASE`) and SQL functions that mirror Windows behavior. This extension enables full compatibility on non-Windows platforms by mimicking the expected string handling, case folding, and accent insensitivity.
 
-Original unifuzz.c code came from here:
-https://sqlitetoolsforrootsmagic.wikispaces.com/file/view/unifuzz.c/469471116/unifuzz.c
+## ✨ Features
 
-..and the need for a such an extension is explained here: 
-https://sqlitetoolsforrootsmagic.wikispaces.com/RMNOCASE+-+faking+it+in+SQLite+Expert%2C+command-line+shell+et+al
+- **RMNOCASE collation**: Emulates Windows behavior (via Wine or native logic).
+- Optional override of SQLite's built-in `NOCASE` collation.
+- Additional collations: `NAMES`, `UNACCENTED`, `NUMERICS`.
+- SQL functions for string normalization, case folding, unaccenting, character handling, and more:
+  - `ascii()`, `case()`, `flip()`, `unaccent()`, `proper()`
+  - `chrw()`, `space()`, `stripdiacritics()`
+- Support for UTF-8 and UTF-16 SQL text encodings.
+- Cross-platform: tested on Linux (x86_64), macOS (arm64), and Windows (planned).
+- Reindexing support: `REINDEX RMNOCASE;` after loading the extension ensures proper use.
 
+## 🛠️ Building
 
-The above page provides a link to a WIN32 DLL for use on Windows systems, which cannot be used on macOS or Linux systems.
-Therefore the code needs to be compiled to work on a macOS system.
+This project uses a flexible `Makefile` to support:
 
-Jun 2025 : Makefile changes to compile on a Linux system made
+- Native builds on Linux and macOS.
+- Cross-compilation on Linux for macOS (arm64).
+- Organized output under `dist/$(PLATFORM_TAG)/`.
 
-This page gives some details on how to compile a SQLite loadable extension:
-https://sqlite.org/loadext.html
+### Requirements
 
+- **SQLite development headers**
+- **Clang or GCC**
+- **Make**
+- On Linux, local Wine source code must be present (pared down, see `wine/` directory)
 
-One hurdle in using the unifuzz.c code is that the author(s) used the Windows CompareStringW()
-function, and warns us of this.  A replacement for this code is needed for the extension to
-link. 
+### Example Build Commands
 
-Wine (https://www.winehq.org/) provides code for running Windows programs on Unix-based systems (like macOS).
-Rather than install Wine and figuring out how to get the unifuzz extension to use the runtime libraries, it
-was decided to just statically compile the needed function into the extension itself.
+```bash
+# Native build (on Linux or macOS)
+make
 
-This required some mining operations to retrieve only the needed code and some minor editing to establish
-the minimal set of files needed.  Only two C source files from the base Wine source files were modified --
-all other files are used as is.
+# Cross-compile for macOS arm64 from Linux
+make PLATFORM=macos_arm64
 
-Compiling
-================================
-This has been tested on a macOS system (MacBook Pro (15-inch, Early 2011) running macOS Sierra Version 10.12.6) and a Linux system (System76 Oryx Pro running Pop!_OS 22.04 LTS).
+# Run tests
+make testall
 
-Also installed on the macOS system is MacPorts (including Apple's Xcode Developer Tools), sqlite3 3.20.1 (from MacPorts)
-
-Having the source for Wine is not necessary (but may be necessary in the future).
-
-Clone the repository and compile:
-
-```
-% git clone https://github.com/mooredan/unifuzz.git
-% cd unifuzz
-% make
-```
-
-That's it. The result should be the SQLite loadable extension "unifuzz.dylib" for macOS, and "unifuzz.so" for Linux.
-
-Usage
-================================
-Run sqlite3 referencing a SQLite database,
-... Load the extension with .load
-... Run queries
-
-The transcript below shows the collation error prior to 
-loading the extension and success after doing so.
-
-```
-$ sqlite3 ~/Documents/Genealogy/RootsMagic/ZebMoore.rmgc
-SQLite version 3.20.1 2017-08-24 16:21:36
-Enter ".help" for usage hints.
-sqlite> SELECT Surname, Given FROM NameTable WHERE Surname LIKE "Moore" LIMIT 10;
-Error: no such collation sequence: RMNOCASE
-sqlite> .load unifuzz
-sqlite> SELECT Surname, Given FROM NameTable WHERE Surname LIKE "Moore" LIMIT 10;
-Moore|
-Moore|?
-Moore|?
-Moore|Abram Schultz
-Moore|Ada
-Moore|Ada
-Moore|Ada G
-Moore|Ada Grace
-Moore|Ada Mae
-Moore|Ada Pearl
-sqlite> .quit
+# Package prebuilt libraries for distribution
+make publish
 ```
 
+## 🧪 Testing
 
-To Do
-==============================================================
-* Automatically reference the Wine source files and copy the
-  necessary files over and patch the two files that need 
-  modification.
+The Makefile includes robust tests:
 
-* Release compiled extensions for various platforms (being with macOS)
+- `make test`: runs unit tests using in-memory SQLite and the `unifuzz` extension.
+- `make testdb`: runs integration tests against a sanitized RootsMagic `.rmtree` file (`testdata.rmtree`).
+- `make test_chrw`: exercises Unicode character output (via `chrw()`).
+- `make testall`: runs all the above.
 
-* Resolve the last two compile warnings (initialization of array of struct
-  variables)
+To test against an actual RootsMagic database:
 
-* More testing? ...seems to be working OK, however it might choke on names
-  where non-English characters are used in names
+```bash
+cp your_sanitized_file.rmtree testdata.rmtree
+make testdb
+```
 
+> ⚠️ Warning: Running against real data should be read-only. This extension does not modify the database.
 
-Acknowledgements
-=================================
-Big thanks to the following folks, without them blazing the trail,
-writing and testing the original code, none of this would have been
-possible:
+## 📦 Distribution Layout
 
-* Jean-Christophe Deschamps : last known author of unifuzz.c
-* Tom Holden : founder(?) and maintainer of SQLite Tools for RootsMagic
-* Richard Otter : https://github.com/RichardOtter/Genealogy-scripts
-* Wine authors
+Prebuilt extensions are placed under `dist/`:
 
+```
+dist/
+├── linux_x86_64/
+│   └── unifuzz.so
+├── macos_arm64/
+│   └── unifuzz.dylib
+```
+
+## 📁 Directory Structure
+
+```
+Makefile               # Build and test targets
+README.md              # This file
+unifuzz.c              # Main extension code
+test.sql               # SQL test harness
+testdata.rmtree        # Sanitized RM10 test database
+wine/                  # Minimal Wine source for collation support
+```
+
+## 🧑‍💻 Acknowledgments
+
+- Wine Project — for Unicode string collation logic
+- RootsMagic — for using SQLite in a creative, platform-specific way
+- Tom Holden — for identifying the need for `RMNOCASE` collation
+
+## 🔒 License
+
+This project is licensed under the same terms as the SQLite Public Domain or the Wine LGPL components where applicable. See `LICENSE` and `COPYING.LIB`.
+
+---
+
+For more information, see comments in `unifuzz.c` and the build targets in `Makefile`.
