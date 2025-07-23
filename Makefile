@@ -63,7 +63,11 @@ else
       TARGET_OS := macos
       EXT = dylib
       WINE_OBJS =
-      CC := $(OSXCROSS_PATH)/target/bin/arm64-apple-darwin23.5-clang
+      ifeq ($(FORCE_CROSS), 1)
+         CC := $(OSXCROSS_PATH)/target/bin/arm64-apple-darwin23.5-clang
+      else
+         CC := clang
+      endif
       CFLAGS += -dynamiclib -undefined dynamic_lookup
       WINE_INCLUDE =
       # GCC_OPTS = -dynamiclib
